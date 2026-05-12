@@ -1,0 +1,16 @@
+# 환경변수
+.env
+
+# PDF 원본 소스
+Papers/*.pdf
+Papers/Inbox/*.pdf
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+
+# macOS
+.DS_Store
