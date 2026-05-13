@@ -13,6 +13,7 @@ from datetime import date
 from pathlib import Path
 from openai import OpenAI
 from config import OPENAI_API_KEY, OPENAI_MODEL, OBSIDIAN_VAULT, TOPICS_FOLDER
+from topic_writer import add_lens_to_topic
 
 PAPERS_FOLDER = OBSIDIAN_VAULT / "Papers"
 LENS_FOLDER = OBSIDIAN_VAULT / "Lens"
@@ -46,6 +47,11 @@ def run_lens(topic: str, axis: str) -> Path:
     # 4. 분류 및 페이지 생성
     print(f"  분류 및 페이지 생성 중...")
     filepath = _build_lens_page(topic, axis, enriched, client)
+
+    # 5. 토픽 페이지에 lens 링크 추가
+    lens_filename = _safe_filename(f"Lens - {topic} × {axis}")
+    add_lens_to_topic(topic, lens_filename, axis)
+
     return filepath
 
 

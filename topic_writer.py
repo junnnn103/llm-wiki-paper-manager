@@ -57,7 +57,7 @@ def _decide_topics(analysis: dict, existing_topics: list[str], client: OpenAI) -
 규칙:
 - 기존 토픽과 같은 개념이면 정확히 그 이름 사용
 - 새 토픽은 간결하고 일반적인 영어 이름 (예: "Multi-Agent Systems", "LLM Reasoning", "Decision Making")
-- 2-3개만 선택
+- 최대 4개 선택
 
 JSON으로 반환:
 {{"topics": ["토픽1", "토픽2"]}}"""
@@ -69,7 +69,7 @@ JSON으로 반환:
         messages=[{"role": "user", "content": prompt}],
     )
     result = json.loads(response.choices[0].message.content)
-    return result.get("topics", [])[:3]
+    return result.get("topics", [])[:4]
 
 
 def _load_topic_papers(topic: str) -> list[dict]:
@@ -117,6 +117,26 @@ def _synthesize_flow(topic: str, papers: list[dict], client: OpenAI) -> str:
     return response.choices[0].message.content.strip()
 
 
+def add_lens_to_topic(topic: str, lens_filename: str, axis: str):
+    """토픽 페이지에 lens 링크 추가. 이미 있으면 skip."""
+    filepath = TOPICS_FOLDER / f"{_safe_filename(topic)}.md"
+    if not filepath.exists():
+        return
+
+    content = filepath.read_text(encoding="utf-8")
+    lens_link = f"- [[{lens_filename}]] — {axis} 기준 분류"
+
+    if lens_filename in content:
+        return  # 이미 있음
+
+    if "## Lens 분석" in content:
+        content = content.replace("## Lens 분석\n", f"## Lens 분석\n{lens_link}\n")
+    else:
+        content = content.rstrip() + f"\n\n## Lens 분석\n{lens_link}\n"
+
+    filepath.write_text(content, encoding="utf-8")
+
+
 def _save_topic_page(topic: str, papers: list[dict], flow_summary: str):
     today = date.today().isoformat()
     sorted_papers = sorted(papers, key=lambda x: str(x.get("year", "")))
@@ -126,6 +146,15 @@ def _save_topic_page(topic: str, papers: list[dict], flow_summary: str):
         for p in sorted_papers
     )
     table = f"| 논문 | 연도 | 핵심 기여 |\n|------|------|----------|\n{rows}"
+
+    # 기존 lens 섹션 보존
+    filepath = TOPICS_FOLDER / f"{_safe_filename(topic)}.md"
+    existing_lens = ""
+    if filepath.exists():
+        existing = filepath.read_text(encoding="utf-8")
+        m = re.search(r'(## Lens 분석\n.*)', existing, re.DOTALL)
+        if m:
+            existing_lens = "\n" + m.group(1).rstrip()
 
     content = f"""---
 topic: "{topic}"
@@ -139,9 +168,8 @@ paper_count: {len(papers)}
 {table}
 
 ## 흐름 요약
-{flow_summary}
+{flow_summary}{existing_lens}
 """
-    filepath = TOPICS_FOLDER / f"{_safe_filename(topic)}.md"
     filepath.write_text(content, encoding="utf-8")
 
 
