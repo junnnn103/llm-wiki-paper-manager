@@ -15,6 +15,7 @@ OBSIDIAN_VAULT = Path(
 )
 PAPERS_FOLDER = OBSIDIAN_VAULT / "Papers"
 TOPICS_FOLDER = OBSIDIAN_VAULT / "Topics"
+LENS_FOLDER = OBSIDIAN_VAULT / "Lens"
 
 PDF_STORE = Path(os.environ.get("PDF_STORE", str(Path(__file__).parent / "Papers")))
 INBOX_DIR = PDF_STORE / "Inbox"

@@ -43,21 +43,22 @@ def _decide_topics(analysis: dict, existing_topics: list[str], client: OpenAI) -
     """이 논문이 속하는 토픽 2-3개 결정. 기존 토픽 우선 재사용."""
     existing_str = "\n".join(f"- {t}" for t in existing_topics) if existing_topics else "(없음)"
 
-    prompt = f"""다음 논문을 분류할 토픽 2-3개를 결정하세요.
+    prompt = f"""다음 논문의 키워드를 보고, 각 키워드가 기존 토픽 중 어디에 해당하는지 판단하여 토픽을 결정하세요.
 
 ## 논문 정보
 제목: {analysis.get('title', '')}
 키워드: {', '.join(analysis.get('keywords', []))}
-태스크: {', '.join(analysis.get('tasks', []))}
 핵심 기여: {', '.join(analysis.get('key_contributions', []))}
 
 ## 기존 토픽 목록
 {existing_str}
 
-규칙:
-- 기존 토픽과 같은 개념이면 정확히 그 이름 사용
-- 새 토픽은 간결하고 일반적인 영어 이름 (예: "Multi-Agent Systems", "LLM Reasoning", "Decision Making")
-- 최대 4개 선택
+## 결정 방식
+1. 각 키워드를 기존 토픽과 비교한다
+2. 의미상 겹치거나 포함되는 기존 토픽이 있으면 → 그 토픽 재사용 (이름 정확히 그대로)
+3. 기존 토픽 어디에도 해당하지 않는 중요한 개념이면 → 새 토픽 생성 (간결한 영어 이름)
+4. 여러 키워드가 같은 토픽에 해당하면 → 토픽 하나로 합산
+5. 최대 4개
 
 JSON으로 반환:
 {{"topics": ["토픽1", "토픽2"]}}"""
@@ -115,6 +116,24 @@ def _synthesize_flow(topic: str, papers: list[dict], client: OpenAI) -> str:
         messages=[{"role": "user", "content": prompt}],
     )
     return response.choices[0].message.content.strip()
+
+
+def get_topic_lenses(topics: list[str]) -> list[tuple[str, str]]:
+    """토픽 페이지들에 연결된 lens (topic, axis) 목록 반환. 중복 제거."""
+    from config import LENS_FOLDER  # 순환 import 방지
+    results = []
+    seen = set()
+    for topic in topics:
+        filepath = TOPICS_FOLDER / f"{_safe_filename(topic)}.md"
+        if not filepath.exists():
+            continue
+        content = filepath.read_text(encoding="utf-8")
+        for match in re.finditer(r'\[\[Lens - (.+?) × (.+?)\]\]', content):
+            key = (match.group(1).strip(), match.group(2).strip())
+            if key not in seen:
+                seen.add(key)
+                results.append(key)
+    return results
 
 
 def add_lens_to_topic(topic: str, lens_filename: str, axis: str):

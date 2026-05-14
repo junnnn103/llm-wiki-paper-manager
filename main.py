@@ -16,7 +16,7 @@ from fetcher import fetch_paper
 from analyzer import analyze_paper
 from obsidian_writer import write_to_obsidian, get_existing_notes
 from deep_researcher import run_deep_research
-from topic_writer import update_topic_pages
+from topic_writer import update_topic_pages, get_topic_lenses
 from lens_writer import run_lens
 
 
@@ -44,6 +44,16 @@ def process_paper(source: str, deep: bool, source_pdf_override: str = ""):
     print("[+] 토픽 페이지 업데이트 중...")
     updated_topics = update_topic_pages(analysis)
     print(f"      토픽: {', '.join(updated_topics)}")
+
+    lenses = get_topic_lenses(updated_topics)
+    if lenses:
+        print(f"[+] 연관 Lens 페이지 업데이트 중... ({len(lenses)}개)")
+        for topic, axis in lenses:
+            try:
+                run_lens(topic, axis)
+                print(f"      ✓ {topic} × {axis}")
+            except Exception as e:
+                print(f"      ✗ {topic} × {axis}: {e}")
 
     print(f"\n--- 분석 결과 ---")
     print(f"제목: {analysis['title']}")

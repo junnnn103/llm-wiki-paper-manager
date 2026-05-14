@@ -12,11 +12,10 @@ import fitz
 from datetime import date
 from pathlib import Path
 from openai import OpenAI
-from config import OPENAI_API_KEY, OPENAI_MODEL, OBSIDIAN_VAULT, TOPICS_FOLDER
+from config import OPENAI_API_KEY, OPENAI_MODEL, OBSIDIAN_VAULT, TOPICS_FOLDER, LENS_FOLDER
 from topic_writer import add_lens_to_topic
 
 PAPERS_FOLDER = OBSIDIAN_VAULT / "Papers"
-LENS_FOLDER = OBSIDIAN_VAULT / "Lens"
 
 
 def run_lens(topic: str, axis: str) -> Path:
